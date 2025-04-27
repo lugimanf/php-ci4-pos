@@ -13,3 +13,9 @@ $routes->group('api', function($routes) {
         $routes->get('hello', 'Api\Hello::index');
     });
 });
+
+$routes->group('utilities', function($routes) {
+    // $routes->get('clear-expired-cache', 'Api\Utilities\Cache::clear_cache');
+    // $routes->group('', ['filter' => 'auth-utilities'], function($routes) {        
+    // });
+});

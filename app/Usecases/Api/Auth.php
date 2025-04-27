@@ -17,10 +17,10 @@ class Auth
         $this->session = Services::cache();
     }
 
-    public function login($params)
+    public function login($payload)
     {
         helper('otp');
-        $email = $params['email'] ?? '';
+        $email = $payload['email'] ?? '';
         // Cek username dan password dengan model
         $userModel = new UserModel();
         $otp = generate_otp();
@@ -65,11 +65,11 @@ class Auth
         }
     }
 
-    public function login_otp($params)
+    public function login_otp($payload)
     {
         helper('otp');
-        $otp = $params['otp'] ?? '';
-        $token = $params['token'] ?? '';
+        $otp = $payload['otp'] ?? '';
+        $token = $payload['token'] ?? '';
         
 
         try {
@@ -81,14 +81,14 @@ class Auth
             $session_id = $decoded->data->session_id; // Pastikan token menyimpan field 'userId'
 
             // Ambil data session berdasarkan ID
-            $sessionData = $this->session->get($session_id);
+            $session_data = $this->session->get($session_id);
 
             // Jika data session ada, return data
-            if ($sessionData && ($otp == $sessionData['otp'])) {
+            if ($session_data && ($otp == $session_data['otp'])) {
                 // Simpan ke cache session
-                $sessionId = uniqid('login_', true);
-                $this->session->save($sessionId, [
-                    'user_id' => $sessionData['user_id'],
+                $login_session_id = uniqid('login_', true);
+                $this->session->save($login_session_id, [
+                    'user_id' => $session_data['user_id'],
                     'otp' =>$otp,
                 ], 3600 * 24 * 30); // expired 30 hari
 
@@ -100,17 +100,18 @@ class Auth
                     'nbf' => time(),             // Not before
                     'exp' => time() + (3600 * 24 * 30),       // Expired in 1 hour
                     'data' => [
-                        'session_id' => $sessionId,
+                        'session_id' => $login_session_id,
                     ]
                 ];
 
                 $jwt = JWT::encode($payload, getenv('encryption.key'), 'HS256');
 
+                $this->session->delete($session_id);
                 return [
                     'data' => [
                         "token" => $jwt,
                     ]
-                    ];
+                ];
             }
 
             // Jika tidak ada data session
